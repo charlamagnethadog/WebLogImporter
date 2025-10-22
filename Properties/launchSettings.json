@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Fenton.WebLogImporter": {
+      "commandName": "Project",
+      "commandLineArgs": "\"D:\\Research\\weblogs\\W3SVC5\" \"API\" \"10-22-2025"
+    }
+  }
+}

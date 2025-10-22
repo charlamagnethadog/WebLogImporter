@@ -1,26 +1,44 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Numerics;
 
 namespace Fenton.WebLogImporter;
 
 public interface IWebLogsFiles
 {
-    OutFile Configure();
+    public DateTime MinDate { get ; }
+    public DateTime MaxDate { get ; }
+    OutFile Configure(string logFolder, string siteName);
     FileHeader ProcessFiles();
 }
 
 public class WebLogsFiles : IWebLogsFiles
 {
-    private const string _in = "c:\\Temp\\Logs\\In";
-    private const string _out = "c:\\Temp\\Logs\\Out";
-    private const string _outFile = "c:\\Temp\\Logs\\Out\\out.log";
+    //private const string _in = "D:\\Research\\weblogs\\W3SVC2";
+    //private const string _out = "D:\\Research\\weblogs\\out2";
+    private const string _outFile = "D:\\Research\\weblogs\\out.log";
     private const string _comment = "#";
     private const string _header = "#Fields:";
+    private const string _extra_header = " sitename";
 
-    public OutFile Configure()
+    private string _in;
+    private string _site;
+    private DateTime _minDate;
+    private DateTime _maxDate;
+
+    public DateTime MinDate { get { return _minDate; } }
+    public DateTime MaxDate { get { return _maxDate; } }
+
+    public OutFile Configure(string logFolder, string siteName)
     {
-        CreateDirectories();
+        if (!Directory.Exists(logFolder))
+            throw new ArgumentException($"folder {logFolder} does not exist", "logFolder");
+
+        _in = logFolder;
+        _site = siteName;
+
+        //CreateDirectories();
         RemoveOldFiles();
         return new OutFile(_outFile);
     }
@@ -32,9 +50,15 @@ public class WebLogsFiles : IWebLogsFiles
 
         using StreamWriter outfile = new StreamWriter(File.Create(_outFile));
 
-        foreach (string file in Directory.GetFiles(_in))
+        var files = Directory.GetFiles(_in);
+        Console.WriteLine($"Found {files.Length} log files in '{_in}'");
+        BigInteger logLines = 0;
+        BigInteger commentLines = 0;
+        _minDate = DateTime.MaxValue;
+        _maxDate = DateTime.MinValue;
+        foreach (string file in files)
         {
-            Console.WriteLine(file);
+            Console.Write($"{file}\r");
 
             using FileStream fileStream = new FileStream(file, FileMode.Open);
             using StreamReader reader = new StreamReader(fileStream);
@@ -48,13 +72,23 @@ public class WebLogsFiles : IWebLogsFiles
                     if (!headerRowProcessed && line.StartsWith(_header))
                     {
                         headerRowProcessed = true;
-                        headerRow = line;
-                        outfile.WriteLine(line);
+                        headerRow = line + _extra_header;
+                        outfile.WriteLine(line + _extra_header);
                     }
+                    commentLines++;
                 }
                 else
                 {
-                    outfile.WriteLine(line);
+                    var fields = line.Split(' ');
+                    DateOnly logDate = DateOnly.Parse(fields[0]);
+                    TimeOnly logTime = TimeOnly.Parse(fields[1]);
+                    DateTime logDateTime = new DateTime(logDate, logTime);
+
+                    if (logDateTime < _minDate ) _minDate = logDateTime;
+                    if (logDateTime > _maxDate ) _maxDate = logDateTime;
+
+                    outfile.WriteLine(line + " " + _site);
+                    logLines++;
                 }
 
                 line = reader.ReadLine();
@@ -62,6 +96,8 @@ public class WebLogsFiles : IWebLogsFiles
         }
 
         outfile.Close();
+        Console.WriteLine($"For site: {_site}; Log file count: {files.Length}; log line count: {logLines:N0}; comment line count: {commentLines:N0};");
+        Console.WriteLine($"Earliest log entry: {_minDate}, Latest log entry: {_maxDate}");
 
         return new FileHeader(headerRow);
     }
@@ -74,19 +110,19 @@ public class WebLogsFiles : IWebLogsFiles
         }
     }
 
-    private static void CreateDirectories()
-    {
-        IList<string> directories = new List<string>
-        {
-            "c:\\Temp",
-            "c:\\Temp\\Logs",
-            _in,
-            _out,
-        };
+    //private void CreateDirectories()
+    //{
+    //    IList<string> directories = new List<string>
+    //    {
+    //        //"c:\\Temp",
+    //        //"c:\\Temp\\Logs",
+    //        //_in,
+    //        //_out,
+    //    };
 
-        foreach (var directory in directories)
-        {
-            Directory.CreateDirectory(directory);
-        }
-    }
+    //    foreach (var directory in directories)
+    //    {
+    //        Directory.CreateDirectory(directory);
+    //    }
+    //}
 }

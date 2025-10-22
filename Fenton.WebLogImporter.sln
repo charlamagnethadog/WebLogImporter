@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29806.167
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.36227.11
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fenton.WebLogImporter", "Fenton.WebLogImporter.csproj", "{A7C90B4B-599B-49D9-829E-DE52E19A7254}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fenton.WebLogImporter", "Fenton.WebLogImporter.csproj", "{A7C90B4B-599B-49D9-829E-DE52E19A7254}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

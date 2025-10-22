@@ -17,11 +17,28 @@ public class WebLogsSqlCommands
         _file = file;
     }
 
+    public SqlCommand GetClearRowsCommand(SqlConnection connection, DateTime minDate, DateTime maxDate, string sitename)
+    {
+        //DateOnly minDateOnly = minDate.Date;
+        //DateOnly maxDateOnly = maxDate.Date;
+        //TimeOnly minTimeOnly = TimeOnly.FromDateTime(minDate);
+        //TimeOnly maxTimeOnly = TimeOnly.FromDateTime(maxDate);
+        string text = $@"delete dbo.LogEntry where sitename='{sitename}' and dbo.CombineDateTime([date],[time]) between '{minDate}' and '{maxDate}'";
+        return GetCommand(connection, text);
+    }
+
     public SqlCommand GetBulkInsertCommand(SqlConnection connection)
     {
         string text = @"
 BULK INSERT LogEntry FROM '" + _file.Value + "' " +
-"WITH (FIRSTROW = 2, FIELDTERMINATOR = ' ', ROWTERMINATOR = '\n', MAXERRORS = 10)";
+"WITH (FIRSTROW = 2, FIELDTERMINATOR = ' ', ROWTERMINATOR = '\r\n', MAXERRORS = 10)";
+        return GetCommand(connection, text);
+    }
+
+    public SqlCommand CheckTableExists(SqlConnection connection)
+    {
+        string text = @"
+select COUNT(*) from sys.sysobjects where name='LogEntry' and type='U'";
         return GetCommand(connection, text);
     }
 
@@ -43,6 +60,17 @@ BEGIN
 END";
         return GetCommand(connection, text);
     }
+
+//    public SqlCommand GetCreateObjectsCommand2(SqlConnection connection)
+//    {
+//        string text = @"
+//CREATE FUNCTION dbo.CombineDateTime(@DateOnly datetime2, @TimeOnly datetime2) RETURNS datetime2 AS
+//BEGIN
+//	-- Return a combined date/time
+//	RETURN DATEADD(day, DATEDIFF(day,'19000101',@DateOnly), CAST(@TimeOnly AS DATETIME2(7)))
+//END";
+//        return GetCommand(connection, text);
+//    }
 
     [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "<Pending>")]
     public SqlCommand GetTableCommand(SqlConnection connection)
@@ -76,6 +104,7 @@ END";
             { "sc-win32-status", "[sc_win32_status]   [INT]           NULL" },
             { "time-taken",      "[time_taken]        [INT]           NULL" },
             { "X-Forwarded-For", "[X_Forwarded_For]   [NVARCHAR](100) NULL" },
+            { "sitename",        "[sitename]          [NVARCHAR](20)  NULL" },
         };
 
         int unknownIndex = 0;
@@ -87,6 +116,7 @@ END";
             }
             else
             {
+                Console.WriteLine($"Add support for unexpected field/column: {field}");
                 fieldDefinitions.Add($"[col{++unknownIndex}] [NVARCHAR](MAX) NULL");
             }
         }
